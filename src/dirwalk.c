@@ -53,7 +53,7 @@ int findAndSort(char* path, char* options){
     closedir(d);
     if (strchr(options, 's') != NULL) {
         setlocale(LC_COLLATE, "");
-        qsort(files, totalFiles, sizeof(char *), compare);
+        qsort(files, totalFiles, sizeof(char*), compare);
     }
     for (int i = 0; i < totalFiles; i++) {
         printf("%s\n", files[i]);
@@ -84,6 +84,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Not enough arguments passed\n");
         return 1;
     }
+
     char *path = NULL;
     char *options = malloc(1 * sizeof(char));
     options[0] = '\0';
