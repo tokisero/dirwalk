@@ -8,8 +8,19 @@
 #include <string.h> 
 #include <locale.h>
 
-int compare(const void *a, const void *b) {
-    return strcmp(*(const char **)a, *(const char **)b);
+int compare(const void *a, const void *b) {  
+    const char* aa = *(const char**)a;
+    const char* bb = *(const char**)b;
+    return strcoll(aa, bb);
+}
+
+char* strdup(const char* str) {
+    size_t size = strlen(str) + 1;
+    char* lnk = malloc(size);
+    if (lnk != NULL){
+        strcpy(lnk, str);
+    }
+    return lnk;
 }
 
 int findAndSort(char* path, char* options){
@@ -36,24 +47,22 @@ int findAndSort(char* path, char* options){
         } else if(strchr(options, 'f') != NULL && S_ISREG(fileStat.st_mode)) {
             match = 1;
         }
+        int s = 0;
+        if (strchr(options, 's') != NULL) {
+            s = 1;
+        }
+        if ((match == 1 && (s == 1 || s == 0)) || options[0] == '\0' || options[0] == 's')  {
+            files = realloc(files, (totalFiles + 1) * sizeof(char*));
+            files[totalFiles] = strdup(fullpath);
+            totalFiles++;
+        } 
         
-        if(match == 1){
-            files = realloc(files, (totalFiles + 1) * sizeof(char*));
-            files[totalFiles] = strdup(fullpath);
-            totalFiles++;
-        }
-        if(options[0] == '\0') {
-            files = realloc(files, (totalFiles + 1) * sizeof(char*));
-            files[totalFiles] = strdup(fullpath);
-            totalFiles++;
-        }
         if (S_ISDIR(fileStat.st_mode)) {
             findAndSort(fullpath, options);
         }
     }
     closedir(d);
     if (strchr(options, 's') != NULL && totalFiles > 1) {
-        setlocale(LC_COLLATE, "");
         qsort(files, totalFiles, sizeof(char*), compare);
     }
     for (int i = 0; i < totalFiles; i++) {
@@ -81,6 +90,7 @@ char* clearOprions(char* options) {
 }
 
 int main(int argc, char *argv[]) {
+    setlocale(LC_COLLATE, "ru_RU.UTF-8");
     if (argc < 1) {
         fprintf(stderr, "Not enough arguments passed\n");
         return 1;
