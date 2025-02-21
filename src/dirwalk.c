@@ -46,12 +46,10 @@ int findAndSort(char* path, char* options){
             match = 1;
         } else if(strchr(options, 'f') != NULL && S_ISREG(fileStat.st_mode)) {
             match = 1;
+        } else if(options[0] == 's') {
+            match = 1;
         }
-        int s = 0;
-        if (strchr(options, 's') != NULL) {
-            s = 1;
-        }
-        if ((match == 1 && (s == 1 || s == 0)) || options[0] == '\0' || options[0] == 's')  {
+        if (match == 1 || options[0] == '\0')  {
             files = realloc(files, (totalFiles + 1) * sizeof(char*));
             files[totalFiles] = strdup(fullpath);
             totalFiles++;
@@ -75,7 +73,7 @@ int findAndSort(char* path, char* options){
 
 char* clearOprions(char* options) {
     int i = 0;
-    char* clearedOptions = NULL;
+    char* clearedOptions = malloc(sizeof(char));
     int totalOptions = 0;
     while (options[i] != '\0') {
         if (options[i] == 'l' || options[i] == 'd' || options[i] == 'f' || options[i] == 's') {
@@ -96,7 +94,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     char *path = NULL;
-    char *options = malloc(1 * sizeof(char));
+    char *options = malloc(sizeof(char));
     options[0] = '\0';
     for (int i = 1; i < argc; i++) {
         if (argv[i][0] == '-') {
