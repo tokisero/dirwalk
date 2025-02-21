@@ -9,7 +9,7 @@
 #include <locale.h>
 
 int compare(const void *a, const void *b) {
-    return strcoll(*(const char **)a, *(const char **)b);
+    return strcmp(*(const char **)a, *(const char **)b);
 }
 
 int findAndSort(char* path, char* options){
@@ -36,22 +36,23 @@ int findAndSort(char* path, char* options){
         } else if(strchr(options, 'f') != NULL && S_ISREG(fileStat.st_mode)) {
             match = 1;
         }
-        if (S_ISDIR(fileStat.st_mode)) {
-            totalFiles += findAndSort(fullpath, options);
-        }
-        if(match){
+        
+        if(match == 1){
             files = realloc(files, (totalFiles + 1) * sizeof(char*));
-            files[totalFiles] = strdup(dir->d_name);
+            files[totalFiles] = strdup(fullpath);
             totalFiles++;
         }
         if(options[0] == '\0') {
             files = realloc(files, (totalFiles + 1) * sizeof(char*));
-            files[totalFiles] = strdup(dir->d_name);
+            files[totalFiles] = strdup(fullpath);
             totalFiles++;
+        }
+        if (S_ISDIR(fileStat.st_mode)) {
+            findAndSort(fullpath, options);
         }
     }
     closedir(d);
-    if (strchr(options, 's') != NULL) {
+    if (strchr(options, 's') != NULL && totalFiles > 1) {
         setlocale(LC_COLLATE, "");
         qsort(files, totalFiles, sizeof(char*), compare);
     }
@@ -84,7 +85,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Not enough arguments passed\n");
         return 1;
     }
-
     char *path = NULL;
     char *options = malloc(1 * sizeof(char));
     options[0] = '\0';
