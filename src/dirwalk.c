@@ -8,6 +8,19 @@
 #include <string.h> 
 #include <locale.h>
 
+
+
+int printFiles(char** files) {
+    int size = 0;
+    while (files[size] != NULL) size++;
+    for (int i = 0; i < size; i++) {
+        printf("%s\n", files[i]);
+        free(files[i]);
+    } 
+    free(files);
+    return 0;
+}
+
 int compare(const void *a, const void *b) {  
     const char* aa = *(const char**)a;
     const char* bb = *(const char**)b;
@@ -23,20 +36,40 @@ char* strdup(const char* str) {
     return lnk;
 }
 
-int findAndSort(char* path, char* options){
+char** uniteArrays(char** files, char** newFiles) {
+    if (files == NULL) {
+        return newFiles;
+    }
+    int size1 = 0;
+    while (files[size1] != NULL) size1++;
+    int size2 = 0;
+    while (newFiles[size2] != NULL) size2++;
+    char** res = (char**)malloc((size1 + size2 + 1) * sizeof(char*));
+    for (int i = 0; i < size1; i++) res[i] = strdup(files[i]);
+    for (int i = 0; i < size2; i++) res[size1 + i] = strdup(newFiles[i]);
+    res[size1 + size2] = NULL;
+    for (int i = 0; i < size1; i++) free(files[i]);
+    free(files);
+    for (int i = 0; i < size2; i++) free(newFiles[i]);
+    free(newFiles);
+    return res;
+}
+
+char** findAndSort(char* path, char* options){
     DIR *d = opendir(path);
+    if (d == NULL) {
+        return NULL;
+    }
     struct dirent *dir;
     struct stat fileStat;
     char fullpath[MAXPATHLEN];
-    int totalFiles = 0;
     char **files = NULL;
-    while ((dir = readdir(d))){
+    while ((dir = readdir(d)) != NULL){
         if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") ==0){
             continue;
         }
         snprintf(fullpath, MAXPATHLEN, "%s/%s", path, dir->d_name);
         if (stat(fullpath, &fileStat) == -1) {
-            perror("stat");
             continue;
         } 
         int match = 0;
@@ -50,25 +83,30 @@ int findAndSort(char* path, char* options){
             match = 1;
         }
         if (match == 1 || options[0] == '\0')  {
-            files = realloc(files, (totalFiles + 1) * sizeof(char*));
-            files[totalFiles] = strdup(fullpath);
-            totalFiles++;
+            if (files == NULL){
+                files = malloc(2*sizeof(char*));
+                files[0] = strdup(fullpath);
+                files[1] = NULL;
+            }else {
+                int size = 0;
+                while (files[size] != NULL) size++;
+                files = realloc(files, (size + 2) * sizeof(char*));
+                files[size] = strdup(fullpath);
+                files[size + 1] = NULL;
+            }
         } 
-        
         if (S_ISDIR(fileStat.st_mode)) {
-            findAndSort(fullpath, options);
+            char **newFiles = findAndSort(fullpath, options);
+            if (newFiles != NULL) {
+                files = uniteArrays(files, newFiles);
+            }
         }
     }
     closedir(d);
-    if (strchr(options, 's') != NULL && totalFiles > 1) {
-        qsort(files, totalFiles, sizeof(char*), compare);
-    }
-    for (int i = 0; i < totalFiles; i++) {
-        printf("%s\n", files[i]);
-        free(files[i]);
-    }
-    free(files);
-    return 0;
+    // if (strchr(options, 's') != NULL && totalFiles > 1) {
+    //     qsort(files, totalFiles, sizeof(char*), compare);
+    // }
+    return files;
 }
 
 char* clearOprions(char* options) {
@@ -98,8 +136,9 @@ int main(int argc, char *argv[]) {
     options[0] = '\0';
     for (int i = 1; i < argc; i++) {
         if (argv[i][0] == '-') {
-            int totalOptions = strlen(argv[i] + 1);
-            options = realloc(options, (totalOptions + 1) * sizeof(char));
+            int len = strlen(argv[i] + 1);
+            options = realloc(options, (strlen(options) + len + 1) * sizeof(char));
+            if(options == NULL) return 1;
             strcat(options, argv[i] + 1);
         } else {
             path = argv[i];
@@ -113,7 +152,8 @@ int main(int argc, char *argv[]) {
     } 
     printf("Path: %s\n", path);
     printf("Options: -%s\n", options);
-    findAndSort(path, options);
+    char** files = findAndSort(path, options);
+    printFiles(files);
     free(options);
     return 0;
 }
