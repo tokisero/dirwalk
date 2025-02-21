@@ -79,7 +79,7 @@ char** findAndSort(char* path, char* options){
             match = 1;
         } else if(strchr(options, 'f') != NULL && S_ISREG(fileStat.st_mode)) {
             match = 1;
-        } else if(options[0] == 's') {
+        } else if(options[0] == 's' && options[1] == '\0'){
             match = 1;
         }
         if (match == 1 || options[0] == '\0')  {
@@ -103,9 +103,6 @@ char** findAndSort(char* path, char* options){
         }
     }
     closedir(d);
-    // if (strchr(options, 's') != NULL && totalFiles > 1) {
-    //     qsort(files, totalFiles, sizeof(char*), compare);
-    // }
     return files;
 }
 
@@ -113,14 +110,42 @@ char* clearOprions(char* options) {
     int i = 0;
     char* clearedOptions = malloc(sizeof(char));
     int totalOptions = 0;
+    int l = 0;
+    int d = 0;
+    int f = 0;
+    int s = 0;
     while (options[i] != '\0') {
-        if (options[i] == 'l' || options[i] == 'd' || options[i] == 'f' || options[i] == 's') {
+        if (options[i] == 'l' && l == 0){
+            l = 1;
             clearedOptions = realloc(clearedOptions, (totalOptions + 2) * sizeof(char));
             clearedOptions[totalOptions] = options[i];
             totalOptions++;
+            continue;
+        } 
+        if (options[i] == 'd' && d == 0){
+            d = 1;
+            clearedOptions = realloc(clearedOptions, (totalOptions + 2) * sizeof(char));
+            clearedOptions[totalOptions] = options[i];
+            totalOptions++;
+            continue;
+        } 
+        if (options[i] == 'f' && f == 0){
+            f = 1;
+            clearedOptions = realloc(clearedOptions, (totalOptions + 2) * sizeof(char));
+            clearedOptions[totalOptions] = options[i];
+            totalOptions++;
+            continue;
+        } 
+        if (options[i] == 's' && s == 0){
+            s = 1;
+            clearedOptions = realloc(clearedOptions, (totalOptions + 2) * sizeof(char));
+            clearedOptions[totalOptions] = options[i];
+            totalOptions++;
+            continue;
         }
         i++;
     }
+
     clearedOptions[totalOptions] = '\0';
     return clearedOptions;
 }
@@ -153,6 +178,12 @@ int main(int argc, char *argv[]) {
     printf("Path: %s\n", path);
     printf("Options: -%s\n", options);
     char** files = findAndSort(path, options);
+    int size = 0;
+    while (files[size] != NULL) size++;
+    if (strchr(options, 's') != NULL && size > 1) {
+        setlocale(LC_COLLATE, "");
+        qsort(files, size, sizeof(char*), compare);
+    }
     printFiles(files);
     free(options);
     return 0;
